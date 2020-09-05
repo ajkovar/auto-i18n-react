@@ -11,7 +11,14 @@ const ast = parser.parse(file.toString(), {
   plugins: ["jsx"],
 });
 
+let hasFormattedMessageImport = false;
 traverse.default(ast, {
+  ImportDeclaration: function (path) {
+    hasFormattedMessageImport = hasFormattedMessageImport || path.node.specifiers.some(
+      (node) =>
+        node.type === "ImportSpecifier" && node.local.name === "FormattedMessage"
+    );
+  },
   JSXText: function (path) {
     if (path.node.value.trim() !== "") {
       path.replaceWith(
@@ -33,13 +40,19 @@ traverse.default(ast, {
     }
   },
 });
+console.log(hasFormattedMessageImport);
+
+let code = hasFormattedMessageImport ? '' : "import {FormattedMessage} from 'react-intl';"; 
+code += generate(ast).code;
+
 
 fs.writeFileSync(
   "sample/output.jsx",
-  prettier.format(generate(ast).code, {
-    trailingComma: "es5",
-    tabWidth: 2,
-    semi: true,
-    singleQuote: true,
-  })
+//   code
+    prettier.format(code, {
+      trailingComma: "es5",
+      tabWidth: 2,
+      semi: true,
+      singleQuote: true,
+    })
 );
