@@ -14,22 +14,16 @@ export default function (file: string) {
     sourceType: "module",
     plugins: ["jsx"],
   });
-  let hasFormattedMessageImport = false;
+  let formattedMessageImportNeeded = false;
   let injectIntlImportNeeded = false;
   let useIntlImportNeeded = false;
   let parentClass: NodePath<t.ClassDeclaration> | null;
   traverse(ast, {
-    ImportDeclaration: function (path) {
-      hasFormattedMessageImport =
-        hasFormattedMessageImport ||
-        path.node.specifiers.some(
-          (node) =>
-            node.type === "ImportSpecifier" &&
-            node.local.name === "FormattedMessage"
-        );
-    },
     JSXText: function (path) {
       if (path.node.value.trim() !== "") {
+        formattedMessageImportNeeded = !path.scope.hasBinding(
+          "FormattedMessage"
+        );
         path.replaceWith(
           t.jsxElement(
             t.jsxOpeningElement(
@@ -75,9 +69,9 @@ export default function (file: string) {
                 t.identifier("intl")
               )
             : t.callExpression(t.identifier("useIntl"), []);
-            if(!parentClass) {
-              useIntlImportNeeded = !path.scope.hasBinding('useIntl')
-            }
+          if (!parentClass) {
+            useIntlImportNeeded = !path.scope.hasBinding("useIntl");
+          }
           (reactContext?.get("body") as NodePath<t.Node>).scope.push({
             id: t.identifier("intl"),
             init,
@@ -116,7 +110,7 @@ export default function (file: string) {
   });
 
   const imports = {
-    FormattedMessage: !hasFormattedMessageImport,
+    FormattedMessage: formattedMessageImportNeeded,
     injectIntl: injectIntlImportNeeded,
     useIntl: useIntlImportNeeded,
   };
