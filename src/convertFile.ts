@@ -3,9 +3,8 @@ import traverse, { NodePath } from "@babel/traverse";
 import generate from "@babel/generator";
 import * as t from "@babel/types";
 import prettier from "prettier";
-import findContainingReactClass from "./util/findContainingReactClass";
-import findContainer from "./util/findContainer";
 import translateStringLiteral from "./util/translateStringLiteral";
+import isReactFn from "./util/isReactFn";
 
 const whitelistedAttributes = "subtitle text noText yesText label buttonCTAText title ctaLinkText".split(
   " "
@@ -17,6 +16,7 @@ export default function (file: string) {
   });
   let hasFormattedMessageImport = false;
   let injectIntlImportNeeded = false;
+  let useIntlImportNeeded = false;
   let parentClass: NodePath<t.ClassDeclaration> | null;
   traverse(ast, {
     ImportDeclaration: function (path) {
@@ -63,22 +63,24 @@ export default function (file: string) {
       }
     },
     StringLiteral: function (path) {
-      const translatedVersion = translateStringLiteral(path)
-      if (
-        translatedVersion && 
-        parentClass
-      ) {
-        const classMethod = findContainer(
-          path as NodePath<t.Node>,
-          "ClassMethod"
-        ) as NodePath<t.ClassMethod>;
+      const translatedVersion = translateStringLiteral(path);
+      const reactContext = parentClass
+        ? path.findParent((parent) => parent.isClassMethod())
+        : path.findParent((parent) => isReactFn(parent));
+      if (translatedVersion && reactContext) {
         if (!path.scope.hasBinding("intl")) {
-          classMethod?.get("body").scope.push({
+          const init = parentClass
+            ? t.memberExpression(
+                t.memberExpression(t.thisExpression(), t.identifier("props")),
+                t.identifier("intl")
+              )
+            : t.callExpression(t.identifier("useIntl"), []);
+            if(!parentClass) {
+              useIntlImportNeeded = !path.scope.hasBinding('useIntl')
+            }
+          (reactContext?.get("body") as NodePath<t.Node>).scope.push({
             id: t.identifier("intl"),
-            init: t.memberExpression(
-              t.memberExpression(t.thisExpression(), t.identifier("props")),
-              t.identifier("intl")
-            ),
+            init,
           });
         }
         path.replaceWith(translatedVersion);
@@ -116,6 +118,7 @@ export default function (file: string) {
   const imports = {
     FormattedMessage: !hasFormattedMessageImport,
     injectIntl: injectIntlImportNeeded,
+    useIntl: useIntlImportNeeded,
   };
 
   const importsString = Object.entries(imports)
