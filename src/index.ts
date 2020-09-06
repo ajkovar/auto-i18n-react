@@ -3,32 +3,27 @@ import minimatch from "minimatch";
 import recursive from "recursive-readdir";
 import yargs from "yargs";
 import convertFile from "./convertFile";
+import chalk from "chalk";
 
 interface Arguments {
-  files: string | undefined;
+  target: string | undefined;
 }
 
 const argv: Arguments = yargs.options({
-  files: { type: "string" },
+  target: {
+    type: "string",
+    description: "Target directory where files will be converted in place",
+  },
 }).argv;
 
-if (argv.files) {
-  recursive(argv.files, (err, files) => {
+if (argv.target) {
+  recursive(argv.target, (err, files) => {
     files.filter(minimatch.filter("**/*.jsx")).forEach((fileName) => {
       const file = fs.readFileSync(fileName);
       fs.writeFileSync(fileName, convertFile(file.toString()));
     });
   });
+} else {
+  console.log(chalk.red("Error: A target directory must be selected."));
+  yargs.showHelp();
 }
-
-// const file = fs.readFileSync("./sample/CardLayout.jsx");
-
-// fs.writeFileSync(
-//   "sample/output.jsx",
-//   prettier.format(code, {
-//     trailingComma: "es5",
-//     tabWidth: 2,
-//     semi: true,
-//     singleQuote: true,
-//   })
-// );
