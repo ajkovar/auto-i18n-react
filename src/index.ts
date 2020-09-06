@@ -71,29 +71,13 @@ traverse(ast, {
         path as NodePath<t.Node>,
         "ClassMethod"
       ) as NodePath<t.ClassMethod>;
-      //   const topLevelBlock = (classMethod?.node as t.ClassMethod).body;
-      //   topLevelBlock.body.some(
-      //     (statement) =>
-      //       statement.type === "VariableDeclaration" &&
-      //       statement.declarations.some(
-      //         (declarator) =>
-      //           declarator.id.type === "ObjectPattern" &&
-      //           declarator.id.properties.some(
-      //             (property) => property.key.name == "intl"
-      //           )
-      //       )
-      //   );
       if (!path.scope.hasBinding("intl")) {
-        // classMethod
-        //   ?.get("body")
-        //   .unshiftContainer("body", template.ast("const {intl} = this.props;"));
         classMethod?.get("body").scope.push({
           id: t.identifier("intl"),
           init: t.memberExpression(
             t.memberExpression(t.thisExpression(), t.identifier("props")),
             t.identifier("intl")
           ),
-          //   template.ast("const {intl} = this.props;")
         });
       }
       const intlCallExpression = t.callExpression(
@@ -134,53 +118,6 @@ traverse(ast, {
     );
     path.skip();
   },
-  //   JSXAttribute: function (path) {
-  //     // TODO move this to StringLiteral selector
-  //     const whitelistedAttributes = "subtitle text noText yesText label buttonCTAText title ctaLinkText".split(
-  //       " "
-  //     );
-  //     const node = path.node as t.JSXAttribute;
-  //     const attrName = node.name.name.toString();
-  //     if (whitelistedAttributes.includes(attrName)) {
-  //       const parentClass = findContainingReactClass(path as NodePath<t.Node>);
-  //       //   console.log(attrName);
-  //       //   const conditional =
-  //       //     node.value?.type === "JSXExpressionContainer" &&
-  //       //     (node.value as t.JSXExpressionContainer).expression.type ===
-  //       //       "ConditionalExpression" &&
-  //       //     (((node.value as t.JSXExpressionContainer)
-  //       //       .expression as t.ConditionalExpression).alternate.type ===
-  //       //       "StringLiteral" ||
-  //       //       ((node.value as t.JSXExpressionContainer)
-  //       //         .expression as t.ConditionalExpression).consequent.type ===
-  //       //         "StringLiteral");
-  //       //   const literal =
-  //       //     node.value?.type === "JSXExpressionContainer" &&
-  //       //     (node.value as t.JSXExpressionContainer).expression.type ===
-  //       //       "StringLiteral";
-  //       if (parentClass) {
-  //         path.replaceWith(
-  //           t.jsxAttribute(
-  //             t.jsxIdentifier(attrName),
-  //             t.jsxExpressionContainer(
-  //               t.callExpression(
-  //                 // t.memberExpression(
-  //                 //   t.identifier("this"),
-  //                 t.memberExpression(
-  //                   t.identifier("intl"),
-  //                   t.identifier("formatMessage")
-  //                 ),
-  //                 // ),
-  //                 // [t.stringLiteral(node.value?.value)]
-  //                 [t.stringLiteral("test")]
-  //               )
-  //             )
-  //           )
-  //         );
-  //       }
-  //       path.skip();
-  //     }
-  //   },
 });
 
 const imports = {
@@ -200,7 +137,6 @@ const code =
 
 fs.writeFileSync(
   "sample/output.jsx",
-//   code
   prettier.format(code, {
     trailingComma: "es5",
     tabWidth: 2,
