@@ -5,6 +5,7 @@ import * as t from "@babel/types";
 import prettier from "prettier";
 import findContainingReactClass from "./util/findContainingReactClass";
 import findContainer from "./util/findContainer";
+import translateStringLiteral from "./util/translateStringLiteral";
 
 const whitelistedAttributes = "subtitle text noText yesText label buttonCTAText title ctaLinkText".split(
   " "
@@ -48,20 +49,23 @@ export default function (file: string) {
         path.skip();
       }
     },
-    StringLiteral: function (path) {
-      parentClass = findContainingReactClass(path as NodePath<t.Node>);
-      const allowedContainers = [
-        "JSXExpressionContainer",
-        "ConditionalExpression",
-        "JSXAttribute",
-        "ObjectProperty",
-      ];
-      // Assume things with capital letters or certain punctuation are translatable.
-      // This may need to be adjusted
-      const textRegexp = /[A-Z\.\,\!\:]/;
+    ClassDeclaration: function (path) {
+      const superClass = path.node.superClass;
       if (
-        allowedContainers.includes(path.parentPath.node.type) &&
-        textRegexp.exec(path.node.value) &&
+        (superClass &&
+          superClass.type === "Identifier" &&
+          superClass.name === "Component") ||
+        (t.isMemberExpression(superClass) &&
+          t.isIdentifier(superClass.object) &&
+          superClass.object.name === "React")
+      ) {
+        parentClass = path;
+      }
+    },
+    StringLiteral: function (path) {
+      const translatedVersion = translateStringLiteral(path)
+      if (
+        translatedVersion && 
         parentClass
       ) {
         const classMethod = findContainer(
@@ -77,18 +81,7 @@ export default function (file: string) {
             ),
           });
         }
-        const intlCallExpression = t.callExpression(
-          t.memberExpression(
-            t.identifier("intl"),
-            t.identifier("formatMessage")
-          ),
-          [t.stringLiteral(path.node.value)]
-        );
-        path.replaceWith(
-          path.parentPath.node.type === "JSXAttribute"
-            ? t.jsxExpressionContainer(intlCallExpression)
-            : intlCallExpression
-        );
+        path.replaceWith(translatedVersion);
         path.skip();
       }
     },
