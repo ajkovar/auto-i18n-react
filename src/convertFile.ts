@@ -30,7 +30,7 @@ export default function (file: string) {
               t.jsxIdentifier("FormattedMessage"),
               [
                 t.jsxAttribute(
-                  t.jsxIdentifier("description"),
+                  t.jsxIdentifier("defaultMessage"),
                   t.stringLiteral(path.node.value.trim())
                 ),
               ],
@@ -126,9 +126,10 @@ export default function (file: string) {
       : `import {${importsString}} from 'react-intl';`) + generate(ast).code;
 
   return prettier.format(code, {
-    trailingComma: "es5",
+    trailingComma: "none",
     tabWidth: 2,
     semi: true,
     singleQuote: true,
+    jsxSingleQuote: true
   });
 }
