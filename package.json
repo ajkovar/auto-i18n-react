@@ -26,7 +26,8 @@
     "yargs": "^15.4.1"
   },
   "scripts": {
-    "exec": "tsc && node src/index.js --files ~/projects/you/YOU-Frontend/app/components/Article",
+    "exec": "tsc && node src/index.js",
+    "debug": "tsc && node src/index.js --target ~/projects/you/YOU-Frontend/app/components/Article",
     "dev": "ts-node-dev src/index.ts"
   }
 }
