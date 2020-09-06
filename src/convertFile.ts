@@ -89,8 +89,14 @@ export default function (file: string) {
             if (!parentClass) {
               return;
             }
+            const alreadyWrappedWithHoc = !!path.findParent(
+              (parent) =>
+                parent.isCallExpression() &&
+                parent.node.callee.type === "Identifier" &&
+                parent.node.callee.name === "injectIntl"
+            );
             const className = parentClass.node.id.name;
-            if (path.node.name === className) {
+            if (path.node.name === className && !alreadyWrappedWithHoc) {
               injectIntlImportNeeded = !path.scope.hasBinding("injectIntl");
               path.replaceWith(
                 t.callExpression(t.identifier("injectIntl"), [
@@ -130,6 +136,6 @@ export default function (file: string) {
     tabWidth: 2,
     semi: true,
     singleQuote: true,
-    jsxSingleQuote: true
+    jsxSingleQuote: true,
   });
 }
