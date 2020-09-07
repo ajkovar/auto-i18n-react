@@ -18,6 +18,10 @@ const argv: Arguments = yargs.options({
 
 if (argv.target) {
   recursive(argv.target, (err, files) => {
+    if (err) {
+      console.log(chalk.red(err.message));
+      return 1;
+    }
     files.filter(minimatch.filter("**/*.jsx")).forEach((fileName) => {
       const file = fs.readFileSync(fileName);
       fs.writeFileSync(fileName, convertFile(file.toString()));
