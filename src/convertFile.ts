@@ -12,6 +12,7 @@ export default function (file: string): [string, number] {
     sourceType: "module",
     plugins: ["jsx"],
   });
+  let hocInjectionNeeded = false;
   let formattedMessageImportNeeded = false;
   let injectIntlImportNeeded = false;
   let useIntlImportNeeded = false;
@@ -76,6 +77,8 @@ export default function (file: string): [string, number] {
             : t.callExpression(t.identifier("useIntl"), []);
           if (!parentClass) {
             useIntlImportNeeded = !path.scope.hasBinding("useIntl");
+          } else {
+            hocInjectionNeeded = true;
           }
           // don't use variable in constructor for now because it gets printed before
           // super which causes an error
@@ -108,7 +111,11 @@ export default function (file: string): [string, number] {
                 parent.node.callee.name === "injectIntl"
             );
             const className = parentClass.node.id.name;
-            if (path.node.name === className && !alreadyWrappedWithHoc) {
+            if (
+              path.node.name === className &&
+              !alreadyWrappedWithHoc &&
+              hocInjectionNeeded
+            ) {
               injectIntlImportNeeded = !path.scope.hasBinding("injectIntl");
               replacePath(
                 path,
