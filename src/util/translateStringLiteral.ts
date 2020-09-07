@@ -27,17 +27,25 @@ export default (path: NodePath<t.StringLiteral>) => {
       parent.node.name.name === "FormattedMessage"
   );
   const { value } = path.node;
-  const valueIsAcceptablePattern = !urlRegex.test(value) &&
+  const valueIsAcceptablePattern =
+    !urlRegex.test(value) &&
     !fileUrlRegex.test(value) &&
-    naturalLanguageRegex.test(value)
+    naturalLanguageRegex.test(value);
   if (
     !isChildOfFormattedMessage &&
     containerIsWhitelisted &&
-    valueIsAcceptablePattern 
+    valueIsAcceptablePattern
   ) {
     const intlCallExpression = t.callExpression(
       t.memberExpression(t.identifier("intl"), t.identifier("formatMessage")),
-      [t.stringLiteral(value)]
+      [
+        t.objectExpression([
+          t.objectProperty(
+            t.identifier("defaultMessage"),
+            t.stringLiteral(value)
+          ),
+        ]),
+      ]
     );
     return path.parentPath.isJSXAttribute()
       ? t.jsxExpressionContainer(intlCallExpression)
