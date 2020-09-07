@@ -5,6 +5,7 @@ import * as t from "@babel/types";
 import prettier from "prettier";
 import translateStringLiteral from "./util/translateStringLiteral";
 import findTopLevelReactFn from "./util/findTopLevelReactFn";
+import isTranslatablePattern from "./util/isTranslatablePattern";
 
 const whitelistedAttributes = "subtitle text noText yesText label buttonCTAText title ctaLinkText".split(
   " "
@@ -20,7 +21,7 @@ export default function (file: string) {
   let parentClass: NodePath<t.ClassDeclaration> | null;
   traverse(ast, {
     JSXText: function (path) {
-      if (path.node.value.trim() !== "") {
+      if (isTranslatablePattern(path.node.value.trim())) {
         formattedMessageImportNeeded = !path.scope.hasBinding(
           "FormattedMessage"
         );
