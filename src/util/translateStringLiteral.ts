@@ -1,38 +1,14 @@
 import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
+import isTranslatablePath from "./isTranslatablePath";
+import isForbiddenPath from "./isForbiddenPath";
 import isTranslatablePattern from "./isTranslatablePattern";
 
 export default (path: NodePath<t.StringLiteral>) => {
-  const allowedContainers = [
-    "JSXExpressionContainer",
-    "ConditionalExpression",
-    "JSXAttribute",
-  ];
-  const isObjectPropertyValue =
-    path.parentPath.isObjectProperty() && path.parentPath.get("value") === path;
-  const containerIsWhitelisted =
-    allowedContainers.includes(path.parentPath.node.type) ||
-    isObjectPropertyValue;
-  const isChildOfForbiddenElement = path.findParent(
-    (parent) =>
-      (parent.isJSXElement() &&
-        parent.node.openingElement.name.type === "JSXIdentifier" &&
-        parent.node.openingElement.name.name === "svg") ||
-      (parent.isJSXAttribute() &&
-        parent.node.name.type === "JSXIdentifier" &&
-        parent.node.name.name === "className") ||
-      (parent.isJSXOpeningElement() &&
-        parent.node.name.type === "JSXIdentifier" &&
-        parent.node.name.name === "FormattedMessage") ||
-      (parent.isCallExpression() &&
-        parent.node.callee.type === "MemberExpression" &&
-        parent.node.callee.property.type === "Identifier" &&
-        parent.node.callee.property.name === "formatMessage")
-  );
   const { value } = path.node;
   if (
-    !isChildOfForbiddenElement &&
-    containerIsWhitelisted &&
+    !isForbiddenPath(path) &&
+    isTranslatablePath(path) &&
     isTranslatablePattern(value)
   ) {
     const intlCallExpression = t.callExpression(
