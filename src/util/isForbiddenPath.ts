@@ -1,6 +1,6 @@
 import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
-const blacklistedJsxAttributes = ["className", "style", "easing"];
+const blacklistedJsxAttributes = ["className", "style", "easing", 'href'];
 export default (path: NodePath<t.StringLiteral>) =>
   !!path.findParent(
     (parent) =>
