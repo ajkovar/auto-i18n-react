@@ -1,6 +1,21 @@
-import { NodePath } from "@babel/traverse";
+import traverse, { NodePath } from "@babel/traverse";
 
 export default (path: NodePath) => {
-  // TODO improve this
-  return path.isArrowFunctionExpression();
+  if (!path.isArrowFunctionExpression()) {
+    return false;
+  }
+  let containsJsx = false;
+  traverse(
+    path.node,
+    {
+      JSXElement: function () {
+        containsJsx = true;
+      },
+    },
+    path.scope,
+    null,
+    path
+  );
+
+  return containsJsx;
 };

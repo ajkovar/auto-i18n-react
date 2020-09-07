@@ -4,7 +4,7 @@ import generate from "@babel/generator";
 import * as t from "@babel/types";
 import prettier from "prettier";
 import translateStringLiteral from "./util/translateStringLiteral";
-import isReactFn from "./util/isReactFn";
+import findTopLevelReactFn from "./util/findTopLevelReactFn";
 
 const whitelistedAttributes = "subtitle text noText yesText label buttonCTAText title ctaLinkText".split(
   " "
@@ -60,7 +60,7 @@ export default function (file: string) {
       const translatedVersion = translateStringLiteral(path);
       const reactContext = parentClass
         ? path.findParent((parent) => parent.isClassMethod())
-        : path.findParent((parent) => isReactFn(parent));
+        : findTopLevelReactFn(path as NodePath<t.Node>);
       if (translatedVersion && reactContext) {
         if (!path.scope.hasBinding("intl")) {
           const init = parentClass
