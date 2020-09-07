@@ -1,13 +1,6 @@
 import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
-
-const urlRegex = /^[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/i;
-
-const fileUrlRegex = /^(\/?[A-Za-z0-9-]+)(\/[A-Za-z0-9-]+)+\.([a-zA-Z0-9-])+$/;
-
-// Assume things with capital letters or certain punctuation are translatable.
-// This may need to be adjusted
-const naturalLanguageRegex = /[A-Z\.\,\!\:]/;
+import isTranslatablePattern from "./isTranslatablePattern";
 
 export default (path: NodePath<t.StringLiteral>) => {
   const allowedContainers = [
@@ -27,14 +20,10 @@ export default (path: NodePath<t.StringLiteral>) => {
       parent.node.name.name === "FormattedMessage"
   );
   const { value } = path.node;
-  const valueIsAcceptablePattern =
-    !urlRegex.test(value) &&
-    !fileUrlRegex.test(value) &&
-    naturalLanguageRegex.test(value);
   if (
     !isChildOfFormattedMessage &&
     containerIsWhitelisted &&
-    valueIsAcceptablePattern
+    isTranslatablePattern(value)
   ) {
     const intlCallExpression = t.callExpression(
       t.memberExpression(t.identifier("intl"), t.identifier("formatMessage")),
