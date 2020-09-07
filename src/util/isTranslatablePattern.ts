@@ -10,7 +10,7 @@ const cssTypeVarRegex = /^\$[a-zA-Z]+(-[a-zA-Z]+)*$/;
 // matches 'someVariableName'
 const camelCaseVarRegex = /[a-z]+([A-Z][a-z]+)+/;
 
-const hexColorRegex = /^#[a-zA-Z]+$/;
+const hexColorRegex = /^#[a-zA-Z0-9-]+$/;
 
 // matches 'someFn(argument)'
 const functionCallRegex = /^[a-zA-Z]+\(.*\)$/;
@@ -28,10 +28,10 @@ const blackListedPatterns = [
 
 // Assume things with capital letters or certain punctuation are translatable.
 // This may need to be adjusted
-const naturalLanguageRegex = /[A-Z\.\,\!\:\?]/;
+const naturalLanguageRegex = /[A-Z\.\,\!\:\? ]/;
 
 // ensure a minimum number of consecutive characters
-const minimumConsecutiveCharsRegex = /[a-zA-Z]{3,}/;
+const minimumConsecutiveCharsRegex = /[a-zA-Z]{2,}/;
 
 export default function (value: string) {
   return (
