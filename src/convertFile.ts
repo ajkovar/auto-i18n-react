@@ -7,9 +7,6 @@ import translateStringLiteral from "./util/translateStringLiteral";
 import findTopLevelReactFn from "./util/findTopLevelReactFn";
 import isTranslatablePattern from "./util/isTranslatablePattern";
 
-const whitelistedAttributes = "subtitle text noText yesText label buttonCTAText title ctaLinkText".split(
-  " "
-);
 export default function (file: string) {
   const ast = parser.parse(file, {
     sourceType: "module",
@@ -19,13 +16,20 @@ export default function (file: string) {
   let injectIntlImportNeeded = false;
   let useIntlImportNeeded = false;
   let parentClass: NodePath<t.ClassDeclaration> | null;
+  let modifications = 0;
+  const replacePath = (path: any, replacement: t.Node) => {
+    path.replaceWith(replacement);
+    modifications++;
+  };
   traverse(ast, {
     JSXText: function (path) {
       if (isTranslatablePattern(path.node.value.trim())) {
         formattedMessageImportNeeded = !path.scope.hasBinding(
           "FormattedMessage"
         );
-        path.replaceWith(
+
+        replacePath(
+          path,
           t.jsxElement(
             t.jsxOpeningElement(
               t.jsxIdentifier("FormattedMessage"),
@@ -33,7 +37,7 @@ export default function (file: string) {
                 t.jsxAttribute(
                   t.jsxIdentifier("defaultMessage"),
                   // TODO fix this so double quotes will be allowed
-                  t.stringLiteral(path.node.value.trim().split('"').join(''))
+                  t.stringLiteral(path.node.value.trim().split('"').join(""))
                 ),
               ],
               false
@@ -79,7 +83,7 @@ export default function (file: string) {
             init,
           });
         }
-        path.replaceWith(translatedVersion);
+        replacePath(path, translatedVersion);
         path.skip();
       }
     },
@@ -100,7 +104,8 @@ export default function (file: string) {
             const className = parentClass.node.id.name;
             if (path.node.name === className && !alreadyWrappedWithHoc) {
               injectIntlImportNeeded = !path.scope.hasBinding("injectIntl");
-              path.replaceWith(
+              replacePath(
+                path,
                 t.callExpression(t.identifier("injectIntl"), [
                   t.identifier(className),
                 ])
@@ -133,7 +138,7 @@ export default function (file: string) {
       ? ""
       : `import {${importsString}} from 'react-intl';`) + generate(ast).code;
 
-  return prettier.format(code, {
+  return modifications === 0 ? file : prettier.format(code, {
     trailingComma: "none",
     tabWidth: 2,
     semi: true,
