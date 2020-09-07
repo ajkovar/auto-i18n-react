@@ -15,9 +15,13 @@ export default (path: NodePath<t.StringLiteral>) => {
     isObjectPropertyValue;
   const isChildOfFormattedMessage = path.findParent(
     (parent) =>
-      parent.isJSXOpeningElement() &&
-      parent.node.name.type === "JSXIdentifier" &&
-      parent.node.name.name === "FormattedMessage"
+      (parent.isJSXOpeningElement() &&
+        parent.node.name.type === "JSXIdentifier" &&
+        parent.node.name.name === "FormattedMessage") ||
+      (parent.isCallExpression() &&
+        parent.node.callee.type === "MemberExpression" &&
+        parent.node.callee.property.type === "Identifier" &&
+        parent.node.callee.property.name === "formatMessage")
   );
   const { value } = path.node;
   if (
