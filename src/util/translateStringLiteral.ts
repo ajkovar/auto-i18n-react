@@ -13,8 +13,14 @@ export default (path: NodePath<t.StringLiteral>) => {
   const containerIsWhitelisted =
     allowedContainers.includes(path.parentPath.node.type) ||
     isObjectPropertyValue;
-  const isChildOfFormattedMessage = path.findParent(
+  const isChildOfForbiddenElement = path.findParent(
     (parent) =>
+      (parent.isJSXElement() &&
+        parent.node.openingElement.name.type === "JSXIdentifier" &&
+        parent.node.openingElement.name.name === "svg") ||
+      (parent.isJSXAttribute() &&
+        parent.node.name.type === "JSXIdentifier" &&
+        parent.node.name.name === "className") ||
       (parent.isJSXOpeningElement() &&
         parent.node.name.type === "JSXIdentifier" &&
         parent.node.name.name === "FormattedMessage") ||
@@ -25,7 +31,7 @@ export default (path: NodePath<t.StringLiteral>) => {
   );
   const { value } = path.node;
   if (
-    !isChildOfFormattedMessage &&
+    !isChildOfForbiddenElement &&
     containerIsWhitelisted &&
     isTranslatablePattern(value)
   ) {
