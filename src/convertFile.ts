@@ -78,10 +78,17 @@ export default function (file: string): [string, number] {
           if (!parentClass) {
             useIntlImportNeeded = !path.scope.hasBinding("useIntl");
           }
-          (reactContext?.get("body") as NodePath<t.Node>).scope.push({
-            id: t.identifier("intl"),
-            init,
-          });
+          // don't use variable in constructor for now because it gets printed before
+          // super which causes an error
+          !(
+            reactContext.isClassMethod() &&
+            reactContext.node.key.type === "Identifier" &&
+            reactContext.node.key.name === "constructor"
+          ) &&
+            (reactContext?.get("body") as NodePath<t.Node>).scope.push({
+              id: t.identifier("intl"),
+              init,
+            });
         }
         replacePath(path, translatedVersion);
         path.skip();
@@ -147,7 +154,7 @@ export default function (file: string): [string, number] {
           semi: true,
           singleQuote: true,
           jsxSingleQuote: true,
-          parser: 'babel'
+          parser: "babel",
         }),
     modifications,
   ];

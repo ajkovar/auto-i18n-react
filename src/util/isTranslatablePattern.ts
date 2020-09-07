@@ -7,6 +7,7 @@ const consecutiveNonChars = /[_-]{2,}/
 
 // matches '$some-var'
 const cssTypeVarRegex = /^\$[a-zA-Z]+(-[a-zA-Z]+)*$/;
+
 // matches 'someVariableName'
 const camelCaseVarRegex = /[a-z]+([A-Z][a-z]+)+/;
 
