@@ -1,5 +1,6 @@
 import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
+const blacklistedJsxAttributes = ["className", "style", "easing"];
 export default (path: NodePath<t.StringLiteral>) =>
   !!path.findParent(
     (parent) =>
@@ -8,7 +9,7 @@ export default (path: NodePath<t.StringLiteral>) =>
         parent.node.openingElement.name.name === "svg") ||
       (parent.isJSXAttribute() &&
         parent.node.name.type === "JSXIdentifier" &&
-        parent.node.name.name === "className") ||
+        blacklistedJsxAttributes.includes(parent.node.name.name)) ||
       (parent.isJSXOpeningElement() &&
         parent.node.name.type === "JSXIdentifier" &&
         parent.node.name.name === "FormattedMessage") ||
