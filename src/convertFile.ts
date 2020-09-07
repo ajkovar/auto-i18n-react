@@ -31,7 +31,8 @@ export default function (file: string) {
               [
                 t.jsxAttribute(
                   t.jsxIdentifier("defaultMessage"),
-                  t.stringLiteral(path.node.value.trim())
+                  // TODO fix this so double quotes will be allowed
+                  t.stringLiteral(path.node.value.trim().split('"').join(''))
                 ),
               ],
               false
