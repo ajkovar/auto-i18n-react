@@ -7,7 +7,7 @@ import translateStringLiteral from "./util/translateStringLiteral";
 import findTopLevelReactFn from "./util/findTopLevelReactFn";
 import isTranslatablePattern from "./util/isTranslatablePattern";
 
-export default function (file: string) {
+export default function (file: string): [string, number] {
   const ast = parser.parse(file, {
     sourceType: "module",
     plugins: ["jsx"],
@@ -138,11 +138,17 @@ export default function (file: string) {
       ? ""
       : `import {${importsString}} from 'react-intl';`) + generate(ast).code;
 
-  return modifications === 0 ? file : prettier.format(code, {
-    trailingComma: "none",
-    tabWidth: 2,
-    semi: true,
-    singleQuote: true,
-    jsxSingleQuote: true,
-  });
+  return [
+    modifications === 0
+      ? file
+      : prettier.format(code, {
+          trailingComma: "none",
+          tabWidth: 2,
+          semi: true,
+          singleQuote: true,
+          jsxSingleQuote: true,
+          parser: 'babel'
+        }),
+    modifications,
+  ];
 }

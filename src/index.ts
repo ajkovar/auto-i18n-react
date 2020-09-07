@@ -18,14 +18,30 @@ const argv: Arguments = yargs.options({
 
 if (argv.target) {
   recursive(argv.target, (err, files) => {
+    let totalModifications = 0;
+    let filesCount = 0;
+    let modifiedFilesCount = 0;
     if (err) {
       console.log(chalk.red(err.message));
       return 1;
     }
-    files.filter(minimatch.filter("**/*.jsx")).forEach((fileName) => {
+    const jsxFiles = files.filter(minimatch.filter("**/*.jsx"));
+    filesCount = jsxFiles.length;
+    jsxFiles.forEach((fileName) => {
       const file = fs.readFileSync(fileName);
-      fs.writeFileSync(fileName, convertFile(file.toString()));
+      const [convertedFile, modifications] = convertFile(file.toString());
+      totalModifications += modifications;
+      if (modifications > 0) {
+        console.log(`Updating ${fileName}`)
+        modifiedFilesCount++;
+        fs.writeFileSync(fileName, convertedFile);
+      }
     });
+    console.log(
+      chalk.green(
+        `Translated ${totalModifications} words/phrases across ${modifiedFilesCount} files (out of ${filesCount} found).`
+      )
+    );
   });
 } else {
   console.log(chalk.red("Error: A target directory must be selected."));
