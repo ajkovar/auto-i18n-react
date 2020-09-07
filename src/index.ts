@@ -16,6 +16,8 @@ const argv: Arguments = yargs.options({
   },
 }).argv;
 
+const excludedFiles = ["**/*.test.jsx"];
+
 if (argv.target) {
   recursive(argv.target, (err, files) => {
     let totalModifications = 0;
@@ -25,7 +27,13 @@ if (argv.target) {
       console.log(chalk.red(err.message));
       return 1;
     }
-    const jsxFiles = files.filter(minimatch.filter("**/*.jsx"));
+    const jsxFiles = files
+
+      .filter(
+        (fileName) =>
+          !excludedFiles.some((exclude) => minimatch(fileName, exclude))
+      )
+    .filter(minimatch.filter("**/*.jsx"));
     filesCount = jsxFiles.length;
     jsxFiles.forEach((fileName) => {
       const file = fs.readFileSync(fileName);
