@@ -27,7 +27,6 @@ export default function (file: string): [string, number] {
         formattedMessageImportNeeded = !path.scope.hasBinding(
           "FormattedMessage"
         );
-
         replacePath(
           path,
           t.jsxElement(
@@ -40,9 +39,9 @@ export default function (file: string): [string, number] {
                   t.stringLiteral(path.node.value.trim().split('"').join(""))
                 ),
               ],
-              false
+              true
             ),
-            t.jsxClosingElement(t.jsxIdentifier("FormattedMessage")),
+            null,
             []
           )
         );
