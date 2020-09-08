@@ -149,7 +149,12 @@ export default function (file: string): [string, number] {
   const code =
     (importsString.length === 0
       ? ""
-      : `import {${importsString}} from 'react-intl';`) + generate(ast).code;
+      : `import {${importsString}} from 'react-intl';`) +
+    generate(ast, {
+      jsescOption: {
+        minimal: true,
+      },
+    }).code;
 
   return [
     modifications === 0

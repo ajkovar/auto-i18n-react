@@ -35,13 +35,13 @@ if (argv.target) {
       .filter(minimatch.filter("**/*.jsx"));
     filesCount = jsxFiles.length;
     jsxFiles.forEach((fileName) => {
-      const file = fs.readFileSync(fileName);
-      const [convertedFile, modifications] = convertFile(file.toString());
+      const file = fs.readFileSync(fileName, 'utf-8');
+      const [convertedFile, modifications] = convertFile(file);
       totalModifications += modifications;
       if (modifications > 0) {
         console.log(`Updating ${fileName}`);
         modifiedFilesCount++;
-        fs.writeFileSync(fileName, convertedFile);
+        fs.writeFileSync(fileName, convertedFile, 'utf-8');
       }
     });
     console.log(
