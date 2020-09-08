@@ -28,19 +28,18 @@ if (argv.target) {
       return 1;
     }
     const jsxFiles = files
-
       .filter(
         (fileName) =>
           !excludedFiles.some((exclude) => minimatch(fileName, exclude))
       )
-    .filter(minimatch.filter("**/*.jsx"));
+      .filter(minimatch.filter("**/*.jsx"));
     filesCount = jsxFiles.length;
     jsxFiles.forEach((fileName) => {
       const file = fs.readFileSync(fileName);
       const [convertedFile, modifications] = convertFile(file.toString());
       totalModifications += modifications;
       if (modifications > 0) {
-        console.log(`Updating ${fileName}`)
+        console.log(`Updating ${fileName}`);
         modifiedFilesCount++;
         fs.writeFileSync(fileName, convertedFile);
       }
