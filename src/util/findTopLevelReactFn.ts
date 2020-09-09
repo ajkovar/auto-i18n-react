@@ -4,7 +4,7 @@ import isReactFn from "./isReactFn";
 
 function findTopLevelReactFn(
   path: NodePath | null
-): NodePath<t.ArrowFunctionExpression> | null {
+): NodePath<t.ArrowFunctionExpression> | NodePath<t.FunctionDeclaration> | null {
   if (!path) {
     return null;
   }
