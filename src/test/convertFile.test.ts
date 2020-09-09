@@ -7,3 +7,10 @@ test("consecutive text nodes", () => {
   const [output] = convertFile(input);
   expect(output).toBe(expectedOutput);
 });
+
+test("simple attributes", () => {
+  const input = fs.readFileSync(`${__dirname}/samples/simpleAttributes.js`, 'utf8');
+  const expectedOutput = fs.readFileSync(`${__dirname}/samples/simpleAttributes.output.js`, 'utf8');
+  const [output] = convertFile(input);
+  expect(output).toBe(expectedOutput);
+});
