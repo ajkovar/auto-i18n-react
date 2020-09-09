@@ -43,6 +43,9 @@ if (argv.target) {
         modifiedFilesCount++;
         fs.writeFileSync(fileName, convertedFile, 'utf-8');
       }
+      else {
+        console.log(`No translatable strings found in ${fileName}`);
+      }
     });
     console.log(
       chalk.green(
