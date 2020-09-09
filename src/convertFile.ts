@@ -24,7 +24,7 @@ export default function (file: string): [string, number] {
   };
   traverse(ast, {
     JSXText: function (path) {
-      if (isTranslatablePattern(path.node.value.trim())) {
+      if (isTranslatablePattern(path.node.value.trim(), true)) {
         formattedMessageImportNeeded = !path.scope.hasBinding(
           "FormattedMessage"
         );
