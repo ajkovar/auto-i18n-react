@@ -24,7 +24,7 @@ const blackListedPatterns = [
   cssTypeVarRegex,
   hexColorRegex,
   camelCaseVarRegex,
-  functionCallRegex,
+  functionCallRegex
 ];
 
 // Assume things with capital letters or certain punctuation are translatable.
@@ -37,9 +37,7 @@ const minimumConsecutiveCharsRegex = /[a-zA-Z]{2,}/;
 export default function (value: string, isJsxText: boolean = false) {
   return (
     !blackListedPatterns.some((pattern) => pattern.test(value)) &&
-    (isJsxText
-      ? value.length > 0
-      : naturalLanguageRegex.test(value) &&
-        minimumConsecutiveCharsRegex.test(value))
+    minimumConsecutiveCharsRegex.test(value) &&
+    (isJsxText || naturalLanguageRegex.test(value))
   );
 }
