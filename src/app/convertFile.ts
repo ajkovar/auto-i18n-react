@@ -16,6 +16,7 @@ export default function (file: string): [string, number] {
   let formattedMessageImportNeeded = false;
   let injectIntlImportNeeded = false;
   let useIntlImportNeeded = false;
+  let hasPropTypesDeclaration = false;
   let parentClass: NodePath<t.ClassDeclaration> | null;
   let modifications = 0;
   const replacePath = (path: any, replacement: t.Node) => {
@@ -96,6 +97,30 @@ export default function (file: string): [string, number] {
         path.skip();
       }
     },
+    Identifier(path) {
+      debugger;
+      if (path.node.name === 'propTypes') {
+        hasPropTypesDeclaration = true;
+        const assignmentPath = path.findParent((path) =>
+          path.isAssignmentExpression()
+        );
+        const firstProp = (assignmentPath.get('right') as NodePath<
+          t.ObjectExpression
+        >).get('properties.0') as NodePath<t.ObjectProperty>;
+        firstProp.insertBefore(
+          t.objectProperty(
+            t.identifier('intl'),
+            t.callExpression(
+              t.memberExpression(
+                t.identifier('PropTypes'),
+                t.identifier('shape')
+              ),
+              [t.identifier('intlShape')]
+            )
+          )
+        );
+      }
+    },
     ExportDefaultDeclaration(path) {
       traverse(
         path.node,
@@ -138,7 +163,7 @@ export default function (file: string): [string, number] {
   const imports = {
     FormattedMessage: formattedMessageImportNeeded,
     injectIntl: injectIntlImportNeeded,
-    intlShape: injectIntlImportNeeded,
+    intlShape: injectIntlImportNeeded && hasPropTypesDeclaration,
     useIntl: useIntlImportNeeded,
   };
 

@@ -39,3 +39,16 @@ test('forbidden text', () => {
   const [output] = convertFile(input);
   expect(output).toBe(expectedOutput);
 });
+
+test('prop types', () => {
+  const input = fs.readFileSync(
+    `${__dirname}/samples/propTypes.js`,
+    'utf8'
+  );
+  const expectedOutput = fs.readFileSync(
+    `${__dirname}/samples/propTypes.output.js`,
+    'utf8'
+  );
+  const [output] = convertFile(input);
+  expect(output).toBe(expectedOutput);
+});

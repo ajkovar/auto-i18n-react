@@ -7,7 +7,7 @@ class Greeting extends React.Component {
     return (
       <div
         title={intl.formatMessage({
-          defaultMessage: 'some translatable text'
+          defaultMessage: 'some translatable text',
         })}
       >
         <FormattedMessage defaultMessage='hello there' />
