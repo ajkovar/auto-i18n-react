@@ -1,9 +1,9 @@
-import fs = require("fs");
-import minimatch from "minimatch";
-import recursive from "recursive-readdir";
-import yargs from "yargs";
-import convertFile from "./convertFile";
-import chalk from "chalk";
+import fs from 'fs';
+import minimatch from 'minimatch';
+import recursive from 'recursive-readdir';
+import yargs from 'yargs';
+import convertFile from './convertFile';
+import chalk from 'chalk';
 
 interface Arguments {
   target: string | undefined;
@@ -11,12 +11,12 @@ interface Arguments {
 
 const argv: Arguments = yargs.options({
   target: {
-    type: "string",
-    description: "Target directory where files will be converted in place",
+    type: 'string',
+    description: 'Target directory where files will be converted in place',
   },
 }).argv;
 
-const excludedFiles = ["**/*.test.jsx"];
+const excludedFiles = ['**/*.test.jsx'];
 
 if (argv.target) {
   recursive(argv.target, (err, files) => {
@@ -32,7 +32,7 @@ if (argv.target) {
         (fileName) =>
           !excludedFiles.some((exclude) => minimatch(fileName, exclude))
       )
-      .filter(minimatch.filter("**/*.jsx"));
+      .filter(minimatch.filter('**/*.jsx'));
     filesCount = jsxFiles.length;
     jsxFiles.forEach((fileName) => {
       const file = fs.readFileSync(fileName, 'utf-8');
@@ -42,8 +42,7 @@ if (argv.target) {
         console.log(`Updating ${fileName}`);
         modifiedFilesCount++;
         fs.writeFileSync(fileName, convertedFile, 'utf-8');
-      }
-      else {
+      } else {
         console.log(`No translatable strings found in ${fileName}`);
       }
     });
@@ -54,6 +53,6 @@ if (argv.target) {
     );
   });
 } else {
-  console.log(chalk.red("Error: A target directory must be selected."));
+  console.log(chalk.red('Error: A target directory must be selected.'));
   yargs.showHelp();
 }

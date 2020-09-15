@@ -1,16 +1,16 @@
-import * as parser from "@babel/parser";
-import traverse, { NodePath } from "@babel/traverse";
-import generate from "@babel/generator";
-import * as t from "@babel/types";
-import prettier from "prettier";
-import translateStringLiteral from "./util/translateStringLiteral";
-import findTopLevelReactFn from "./util/findTopLevelReactFn";
-import isTranslatablePattern from "./util/isTranslatablePattern";
+import * as parser from '@babel/parser';
+import traverse, { NodePath } from '@babel/traverse';
+import generate from '@babel/generator';
+import * as t from '@babel/types';
+import prettier from 'prettier';
+import translateStringLiteral from './util/translateStringLiteral';
+import findTopLevelReactFn from './util/findTopLevelReactFn';
+import isTranslatablePattern from './util/isTranslatablePattern';
 
 export default function (file: string): [string, number] {
   const ast = parser.parse(file, {
-    sourceType: "module",
-    plugins: ["jsx"],
+    sourceType: 'module',
+    plugins: ['jsx'],
   });
   let hocInjectionNeeded = false;
   let formattedMessageImportNeeded = false;
@@ -26,18 +26,18 @@ export default function (file: string): [string, number] {
     JSXText: function (path) {
       if (isTranslatablePattern(path.node.value.trim(), true)) {
         formattedMessageImportNeeded = !path.scope.hasBinding(
-          "FormattedMessage"
+          'FormattedMessage'
         );
         replacePath(
           path,
           t.jsxElement(
             t.jsxOpeningElement(
-              t.jsxIdentifier("FormattedMessage"),
+              t.jsxIdentifier('FormattedMessage'),
               [
                 t.jsxAttribute(
-                  t.jsxIdentifier("defaultMessage"),
+                  t.jsxIdentifier('defaultMessage'),
                   // TODO fix this so double quotes will be allowed
-                  t.stringLiteral(path.node.value.trim().split('"').join(""))
+                  t.stringLiteral(path.node.value.trim().split('"').join(''))
                 ),
               ],
               true
@@ -53,11 +53,11 @@ export default function (file: string): [string, number] {
       const superClass = path.node.superClass;
       if (
         (superClass &&
-          superClass.type === "Identifier" &&
-          superClass.name === "Component") ||
+          superClass.type === 'Identifier' &&
+          superClass.name === 'Component') ||
         (t.isMemberExpression(superClass) &&
           t.isIdentifier(superClass.object) &&
-          superClass.object.name === "React")
+          superClass.object.name === 'React')
       ) {
         parentClass = path;
       }
@@ -66,17 +66,17 @@ export default function (file: string): [string, number] {
       const translatedVersion = translateStringLiteral(path);
       const reactContext = parentClass
         ? path.findParent((parent) => parent.isClassMethod())
-        : findTopLevelReactFn(path as NodePath<t.Node>);
+        : findTopLevelReactFn(<NodePath<t.Node>>path);
       if (translatedVersion && reactContext) {
-        if (!path.scope.hasBinding("intl")) {
+        if (!path.scope.hasBinding('intl')) {
           const init = parentClass
             ? t.memberExpression(
-                t.memberExpression(t.thisExpression(), t.identifier("props")),
-                t.identifier("intl")
+                t.memberExpression(t.thisExpression(), t.identifier('props')),
+                t.identifier('intl')
               )
-            : t.callExpression(t.identifier("useIntl"), []);
+            : t.callExpression(t.identifier('useIntl'), []);
           if (!parentClass) {
-            useIntlImportNeeded = !path.scope.hasBinding("useIntl");
+            useIntlImportNeeded = !path.scope.hasBinding('useIntl');
           } else {
             hocInjectionNeeded = true;
           }
@@ -84,11 +84,11 @@ export default function (file: string): [string, number] {
           // super which causes an error
           !(
             reactContext.isClassMethod() &&
-            reactContext.node.key.type === "Identifier" &&
-            reactContext.node.key.name === "constructor"
+            reactContext.node.key.type === 'Identifier' &&
+            reactContext.node.key.name === 'constructor'
           ) &&
-            (reactContext?.get("body") as NodePath<t.Node>).scope.push({
-              id: t.identifier("intl"),
+            (<NodePath<t.Node>>reactContext?.get('body')).scope.push({
+              id: t.identifier('intl'),
               init,
             });
         }
@@ -107,8 +107,8 @@ export default function (file: string): [string, number] {
             const alreadyWrappedWithHoc = !!path.findParent(
               (parent) =>
                 parent.isCallExpression() &&
-                parent.node.callee.type === "Identifier" &&
-                parent.node.callee.name === "injectIntl"
+                parent.node.callee.type === 'Identifier' &&
+                parent.node.callee.name === 'injectIntl'
             );
             const className = parentClass.node.id.name;
             if (
@@ -116,10 +116,10 @@ export default function (file: string): [string, number] {
               !alreadyWrappedWithHoc &&
               hocInjectionNeeded
             ) {
-              injectIntlImportNeeded = !path.scope.hasBinding("injectIntl");
+              injectIntlImportNeeded = !path.scope.hasBinding('injectIntl');
               replacePath(
                 path,
-                t.callExpression(t.identifier("injectIntl"), [
+                t.callExpression(t.identifier('injectIntl'), [
                   t.identifier(className),
                 ])
               );
@@ -138,17 +138,18 @@ export default function (file: string): [string, number] {
   const imports = {
     FormattedMessage: formattedMessageImportNeeded,
     injectIntl: injectIntlImportNeeded,
+    intlShape: injectIntlImportNeeded,
     useIntl: useIntlImportNeeded,
   };
 
   const importsString = Object.entries(imports)
     .filter(([key, value]) => value)
     .map(([key]) => key)
-    .join(", ");
+    .join(', ');
 
   const code =
     (importsString.length === 0
-      ? ""
+      ? ''
       : `import {${importsString}} from 'react-intl';`) +
     generate(ast, {
       jsescOption: {
@@ -160,12 +161,12 @@ export default function (file: string): [string, number] {
     modifications === 0
       ? file
       : prettier.format(code, {
-          trailingComma: "none",
+          trailingComma: 'es5',
           tabWidth: 2,
           semi: true,
           singleQuote: true,
           jsxSingleQuote: true,
-          parser: "babel",
+          parser: 'babel',
         }),
     modifications,
   ];
