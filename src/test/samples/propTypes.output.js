@@ -1,4 +1,4 @@
-import { injectIntl, intlShape } from 'react-intl';
+import { injectIntl } from 'react-intl';
 import React from 'react';
 import PropTypes from 'prop-types';
 
@@ -20,7 +20,7 @@ class Greeting extends React.Component {
 }
 
 GreetingPropTypes.propTypes = {
-  intl: PropTypes.shape(intlShape),
+  intl: PropTypes.object,
   name: PropTypes.string,
 };
 export default injectIntl(Greeting);

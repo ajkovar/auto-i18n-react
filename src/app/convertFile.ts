@@ -98,8 +98,7 @@ export default function (file: string): [string, number] {
       }
     },
     Identifier(path) {
-      debugger;
-      if (path.node.name === 'propTypes') {
+      if (path.node.name === 'propTypes' && hocInjectionNeeded) {
         hasPropTypesDeclaration = true;
         const assignmentPath = path.findParent((path) =>
           path.isAssignmentExpression()
@@ -110,13 +109,19 @@ export default function (file: string): [string, number] {
         firstProp.insertBefore(
           t.objectProperty(
             t.identifier('intl'),
-            t.callExpression(
               t.memberExpression(
                 t.identifier('PropTypes'),
-                t.identifier('shape')
+                t.identifier('object')
               ),
-              [t.identifier('intlShape')]
-            )
+              // TODO figure out if this intlShape object still exists somewhere
+              // (it exists in some old examples online)
+            // t.callExpression(
+            //   t.memberExpression(
+            //     t.identifier('PropTypes'),
+            //     t.identifier('shape')
+            //   ),
+            //   [t.identifier('intlShape')]
+            // )
           )
         );
       }
@@ -163,7 +168,7 @@ export default function (file: string): [string, number] {
   const imports = {
     FormattedMessage: formattedMessageImportNeeded,
     injectIntl: injectIntlImportNeeded,
-    intlShape: injectIntlImportNeeded && hasPropTypesDeclaration,
+    // intlShape: injectIntlImportNeeded && hasPropTypesDeclaration,
     useIntl: useIntlImportNeeded,
   };
 
