@@ -1,8 +1,12 @@
 Automatically converts a [React](https://reactjs.org/) codebase to support i18n using the [format.js API](https://formatjs.io/)
 
+Installation:
+
+    npm install -g auto-i18n-react
+
 Usage:
    
-    yarn run exec --target path/to/target/directory
+    auto-i18n-react --target path/to/target/directory
 
 This:
 
