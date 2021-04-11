@@ -103,7 +103,7 @@ export default function (file: string): [string, number] {
         const assignmentPath = path.findParent((path) =>
           path.isAssignmentExpression()
         );
-        const firstProp = (assignmentPath.get('right') as NodePath<
+        const firstProp = (assignmentPath?.get('right') as NodePath<
           t.ObjectExpression
         >).get('properties.0') as NodePath<t.ObjectProperty>;
         firstProp.insertBefore(
