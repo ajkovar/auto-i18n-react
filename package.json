@@ -1,6 +1,6 @@
 {
   "name": "auto-i18n-react",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "src/index.js",
   "license": "MIT",
   "dependencies": {
