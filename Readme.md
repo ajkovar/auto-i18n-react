@@ -69,7 +69,7 @@ becomes:
 
 For file extensions other than jsx simply target them with the --ext option:
 
-   auto-i18n-react -target target/path --ext jsx --ext js
+    auto-i18n-react -target target/path --ext jsx --ext js
 
 Full option list:
     
