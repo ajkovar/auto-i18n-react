@@ -33,8 +33,7 @@
     "yargs": "^15.4.1"
   },
   "scripts": {
-    "exec": "node -r ts-node/register bin/index.js",
-    "dev": "ts-node-dev src/index.ts",
+    "exec": "ts-node-dev src/app/index.ts",
     "test": "jest"
   },
   "bin": {

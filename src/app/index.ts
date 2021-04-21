@@ -7,12 +7,20 @@ import chalk from 'chalk';
 
 interface Arguments {
   target: string | undefined;
+  ext: string[];
 }
 
 const argv: Arguments = yargs.options({
   target: {
+    alias: 't',
     type: 'string',
     description: 'Target directory where files will be converted in place',
+  },
+  ext: {
+    alias: 'e',
+    type: 'array',
+    description: 'Extensions to target',
+    default: ['jsx']
   },
 }).argv;
 
@@ -32,7 +40,7 @@ if (argv.target) {
         (fileName) =>
           !excludedFiles.some((exclude) => minimatch(fileName, exclude))
       )
-      .filter(minimatch.filter('**/*.jsx'));
+      .filter(minimatch.filter(`**/*.+(${argv.ext.join('|')})`));
     filesCount = jsxFiles.length;
     jsxFiles.forEach((fileName) => {
       const file = fs.readFileSync(fileName, 'utf-8');
