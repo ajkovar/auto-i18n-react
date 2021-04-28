@@ -6,17 +6,15 @@ import prettier from 'prettier';
 import translateStringLiteral from './util/translateStringLiteral';
 import findTopLevelReactFn from './util/findTopLevelReactFn';
 import isTranslatablePattern from './util/isTranslatablePattern';
+import FormatJsGenerator from './generators/FormatJsGenerator';
+import isForbiddenPath from './util/isForbiddenPath';
+import isTranslatablePath from './util/isTranslatablePath';
 
-export default function (file: string): [string, number] {
+export default function (file: string, generator = new FormatJsGenerator()): [string, number] {
   const ast = parser.parse(file, {
     sourceType: 'module',
     plugins: ['jsx'],
   });
-  let hocInjectionNeeded = false;
-  let formattedMessageImportNeeded = false;
-  let injectIntlImportNeeded = false;
-  let useIntlImportNeeded = false;
-  let hasPropTypesDeclaration = false;
   let parentClass: NodePath<t.ClassDeclaration> | null;
   let modifications = 0;
   const replacePath = (path: any, replacement: t.Node) => {
@@ -26,27 +24,7 @@ export default function (file: string): [string, number] {
   traverse(ast, {
     JSXText: function (path) {
       if (isTranslatablePattern(path.node.value.trim(), true)) {
-        formattedMessageImportNeeded = !path.scope.hasBinding(
-          'FormattedMessage'
-        );
-        replacePath(
-          path,
-          t.jsxElement(
-            t.jsxOpeningElement(
-              t.jsxIdentifier('FormattedMessage'),
-              [
-                t.jsxAttribute(
-                  t.jsxIdentifier('defaultMessage'),
-                  // TODO fix this so double quotes will be allowed
-                  t.stringLiteral(path.node.value.trim().split('"').join(''))
-                ),
-              ],
-              true
-            ),
-            null,
-            []
-          )
-        );
+        replacePath(path, generator.generateElementForJSXText(path));
         path.skip();
       }
     },
@@ -64,66 +42,22 @@ export default function (file: string): [string, number] {
       }
     },
     StringLiteral: function (path) {
-      const translatedVersion = translateStringLiteral(path);
       const reactContext = parentClass
         ? path.findParent((parent) => parent.isClassMethod())
         : findTopLevelReactFn(<NodePath<t.Node>>path);
-      if (translatedVersion && reactContext) {
-        if (!path.scope.hasBinding('intl')) {
-          const init = parentClass
-            ? t.memberExpression(
-                t.memberExpression(t.thisExpression(), t.identifier('props')),
-                t.identifier('intl')
-              )
-            : t.callExpression(t.identifier('useIntl'), []);
-          if (!parentClass) {
-            useIntlImportNeeded = !path.scope.hasBinding('useIntl');
-          } else {
-            hocInjectionNeeded = true;
-          }
-          // don't use variable in constructor for now because it gets printed before
-          // super which causes an error
-          !(
-            reactContext.isClassMethod() &&
-            reactContext.node.key.type === 'Identifier' &&
-            reactContext.node.key.name === 'constructor'
-          ) &&
-            (<NodePath<t.Node>>reactContext?.get('body')).scope.push({
-              id: t.identifier('intl'),
-              init,
-            });
-        }
-        replacePath(path, translatedVersion);
+  const { value } = path.node;
+  if (
+    !isForbiddenPath(path) &&
+    isTranslatablePath(path) &&
+    isTranslatablePattern(value) && 
+    reactContext) {
+        replacePath(path, generator.translateStringLiteral(path, reactContext, parentClass));
         path.skip();
       }
     },
     Identifier(path) {
-      if (path.node.name === 'propTypes' && hocInjectionNeeded) {
-        hasPropTypesDeclaration = true;
-        const assignmentPath = path.findParent((path) =>
-          path.isAssignmentExpression()
-        );
-        const firstProp = (assignmentPath?.get('right') as NodePath<
-          t.ObjectExpression
-        >).get('properties.0') as NodePath<t.ObjectProperty>;
-        firstProp.insertBefore(
-          t.objectProperty(
-            t.identifier('intl'),
-              t.memberExpression(
-                t.identifier('PropTypes'),
-                t.identifier('object')
-              ),
-              // TODO figure out if this intlShape object still exists somewhere
-              // (it exists in some old examples online)
-            // t.callExpression(
-            //   t.memberExpression(
-            //     t.identifier('PropTypes'),
-            //     t.identifier('shape')
-            //   ),
-            //   [t.identifier('intlShape')]
-            // )
-          )
-        );
+      if (path.node.name === 'propTypes') {
+        generator.replacePropTypes(path);
       }
     },
     ExportDefaultDeclaration(path) {
@@ -134,27 +68,7 @@ export default function (file: string): [string, number] {
             if (!parentClass) {
               return;
             }
-            const alreadyWrappedWithHoc = !!path.findParent(
-              (parent) =>
-                parent.isCallExpression() &&
-                parent.node.callee.type === 'Identifier' &&
-                parent.node.callee.name === 'injectIntl'
-            );
-            const className = parentClass.node.id.name;
-            if (
-              path.node.name === className &&
-              !alreadyWrappedWithHoc &&
-              hocInjectionNeeded
-            ) {
-              injectIntlImportNeeded = !path.scope.hasBinding('injectIntl');
-              replacePath(
-                path,
-                t.callExpression(t.identifier('injectIntl'), [
-                  t.identifier(className),
-                ])
-              );
-              path.skip();
-            }
+            generator.replaceExportVariable(path, parentClass)
           },
         },
         path.scope,
@@ -165,17 +79,7 @@ export default function (file: string): [string, number] {
     },
   });
 
-  const imports = {
-    FormattedMessage: formattedMessageImportNeeded,
-    injectIntl: injectIntlImportNeeded,
-    // intlShape: injectIntlImportNeeded && hasPropTypesDeclaration,
-    useIntl: useIntlImportNeeded,
-  };
-
-  const importsString = Object.entries(imports)
-    .filter(([key, value]) => value)
-    .map(([key]) => key)
-    .join(', ');
+  const importsString = generator.generateImports();
 
   const code =
     (importsString.length === 0
