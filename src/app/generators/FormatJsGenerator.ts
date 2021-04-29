@@ -1,8 +1,8 @@
 import { NodePath } from '@babel/core';
 import * as t from '@babel/types';
-import translateStringLiteral from '../util/translateStringLiteral';
+import I18nGeneratorInterface from './i18nGeneratorInterface';
 
-export default class FormatJsGenerator {
+export default class FormatJsGenerator implements I18nGeneratorInterface {
   formattedMessageImportNeeded: boolean;
   hocInjectionNeeded: boolean;
   useIntlImportNeeded: boolean;
@@ -35,13 +35,12 @@ export default class FormatJsGenerator {
       []
     );
   }
-  translateStringLiteral(
+
+  addVariableToScopeIfNeeded(
     path: NodePath<t.StringLiteral>,
     reactContext: NodePath<t.Node>,
     parentClass: NodePath<t.ClassDeclaration> | null
   ) {
-    const { value } = path.node;
-    const translatedVersion = translateStringLiteral(path);
     if (!path.scope.hasBinding('intl')) {
       const init = parentClass
         ? t.memberExpression(
@@ -66,8 +65,49 @@ export default class FormatJsGenerator {
           init,
         });
     }
-    return translatedVersion;
   }
+
+  generateElementForStringLiteral(path: NodePath<t.StringLiteral>) {
+    const { value } = path.node;
+    const args = [
+      t.objectExpression([
+        t.objectProperty(
+          t.identifier('defaultMessage'),
+          t.stringLiteral(value)
+        ),
+      ]),
+    ];
+    const intlCallExpression = t.callExpression(
+      t.memberExpression(t.identifier('intl'), t.identifier('formatMessage')),
+      args
+    );
+
+    const classMethod = path.findParent((parent) =>
+      parent.isClassMethod()
+    ) as NodePath<t.ClassMethod>;
+    const isInsideConstructor =
+      classMethod &&
+      classMethod.node.key.type === 'Identifier' &&
+      classMethod.node.key.name === 'constructor';
+
+    return path.parentPath.isJSXAttribute()
+      ? t.jsxExpressionContainer(intlCallExpression)
+      : // a bit of a hack but for now just prepend 'this.' to the call if inside a constructor
+      // since creating a var is a bit more difficult due to the super() needing to be first
+      isInsideConstructor
+      ? t.callExpression(
+          t.memberExpression(
+            t.memberExpression(
+              t.memberExpression(t.thisExpression(), t.identifier('props')),
+              t.identifier('intl')
+            ),
+            t.identifier('formatMessage')
+          ),
+          args
+        )
+      : intlCallExpression;
+  }
+
   replaceExportVariable(
     path: NodePath<t.Identifier>,
     parentClass: NodePath<t.ClassDeclaration>
@@ -91,6 +131,7 @@ export default class FormatJsGenerator {
       path.skip();
     }
   }
+
   generateImports() {
     const imports = {
       FormattedMessage: this.formattedMessageImportNeeded,
@@ -102,6 +143,7 @@ export default class FormatJsGenerator {
       .map(([key]) => key)
       .join(', ');
   }
+
   replacePropTypes(path: NodePath<t.Identifier>) {
     if (this.hocInjectionNeeded) {
       const assignmentPath = path.findParent((path) =>

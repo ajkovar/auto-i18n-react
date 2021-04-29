@@ -3,14 +3,17 @@ import traverse, { NodePath } from '@babel/traverse';
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import prettier from 'prettier';
-import translateStringLiteral from './util/translateStringLiteral';
 import findTopLevelReactFn from './util/findTopLevelReactFn';
 import isTranslatablePattern from './util/isTranslatablePattern';
 import FormatJsGenerator from './generators/FormatJsGenerator';
 import isForbiddenPath from './util/isForbiddenPath';
 import isTranslatablePath from './util/isTranslatablePath';
+import I18nGeneratorInterface from './generators/i18nGeneratorInterface';
 
-export default function (file: string, generator = new FormatJsGenerator()): [string, number] {
+export default function (
+  file: string,
+  generator: I18nGeneratorInterface = new FormatJsGenerator()
+): [string, number] {
   const ast = parser.parse(file, {
     sourceType: 'module',
     plugins: ['jsx'],
@@ -45,13 +48,15 @@ export default function (file: string, generator = new FormatJsGenerator()): [st
       const reactContext = parentClass
         ? path.findParent((parent) => parent.isClassMethod())
         : findTopLevelReactFn(<NodePath<t.Node>>path);
-  const { value } = path.node;
-  if (
-    !isForbiddenPath(path) &&
-    isTranslatablePath(path) &&
-    isTranslatablePattern(value) && 
-    reactContext) {
-        replacePath(path, generator.translateStringLiteral(path, reactContext, parentClass));
+      const { value } = path.node;
+      if (
+        !isForbiddenPath(path) &&
+        isTranslatablePath(path) &&
+        isTranslatablePattern(value) &&
+        reactContext
+      ) {
+        generator.addVariableToScopeIfNeeded(path, reactContext, parentClass);
+        replacePath(path, generator.generateElementForStringLiteral(path));
         path.skip();
       }
     },
@@ -68,7 +73,7 @@ export default function (file: string, generator = new FormatJsGenerator()): [st
             if (!parentClass) {
               return;
             }
-            generator.replaceExportVariable(path, parentClass)
+            generator.replaceExportVariable(path, parentClass);
           },
         },
         path.scope,
