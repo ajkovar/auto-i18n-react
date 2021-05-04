@@ -42,10 +42,7 @@ test('forbidden text', () => {
 });
 
 test('formatjs prop types', () => {
-  const input = fs.readFileSync(
-    `${__dirname}/samples/propTypes.js`,
-    'utf8'
-  );
+  const input = fs.readFileSync(`${__dirname}/samples/propTypes.js`, 'utf8');
   const expectedOutput = fs.readFileSync(
     `${__dirname}/samples/propTypes.output.js`,
     'utf8'
@@ -55,12 +52,29 @@ test('formatjs prop types', () => {
 });
 
 test('i18next prop types', () => {
-  const input = fs.readFileSync(
-    `${__dirname}/samples/propTypes.js`,
-    'utf8'
-  );
+  const input = fs.readFileSync(`${__dirname}/samples/propTypes.js`, 'utf8');
   const expectedOutput = fs.readFileSync(
     `${__dirname}/samples/propTypes.i18next.output.js`,
+    'utf8'
+  );
+  const [output] = convertFile(input, new I18NextGenerator());
+  expect(output).toBe(expectedOutput);
+});
+
+test('formatjs functional', () => {
+  const input = fs.readFileSync(`${__dirname}/samples/functional.js`, 'utf8');
+  const expectedOutput = fs.readFileSync(
+    `${__dirname}/samples/functional.formatjs.output.js`,
+    'utf8'
+  );
+  const [output] = convertFile(input);
+  expect(output).toBe(expectedOutput);
+});
+
+test('i18next functional', () => {
+  const input = fs.readFileSync(`${__dirname}/samples/functional.js`, 'utf8');
+  const expectedOutput = fs.readFileSync(
+    `${__dirname}/samples/functional.i18next.output.js`,
     'utf8'
   );
   const [output] = convertFile(input, new I18NextGenerator());

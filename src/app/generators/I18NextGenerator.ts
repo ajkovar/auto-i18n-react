@@ -3,22 +3,17 @@ import * as t from '@babel/types';
 import I18nGeneratorInterface from './i18nGeneratorInterface';
 
 export default class FormatJsGenerator implements I18nGeneratorInterface {
-  formattedMessageImportNeeded: boolean;
   hocInjectionNeeded: boolean;
-  useIntlImportNeeded: boolean;
+  hookImportNeeded: boolean;
   hocImportNeeded: boolean;
 
   constructor() {
-    this.formattedMessageImportNeeded = false;
     this.hocInjectionNeeded = false;
-    this.useIntlImportNeeded = false;
+    this.hookImportNeeded = false;
     this.hocImportNeeded = false;
   }
 
   generateElementForJSXText(path: NodePath<t.JSXText>) {
-    this.formattedMessageImportNeeded = !path.scope.hasBinding(
-      'FormattedMessage'
-    );
     return t.jsxExpressionContainer(
       t.callExpression(t.identifier('t'), [
         t.stringLiteral(path.node.value.trim().split('"').join('')),
@@ -39,7 +34,7 @@ export default class FormatJsGenerator implements I18nGeneratorInterface {
           )
         : t.callExpression(t.identifier('useTranslation'), []);
       if (!parentClass) {
-        this.useIntlImportNeeded = !path.scope.hasBinding('useTranslation');
+        this.hookImportNeeded = !path.scope.hasBinding('useTranslation');
       } else {
         this.hocInjectionNeeded = true;
       }
@@ -115,9 +110,8 @@ export default class FormatJsGenerator implements I18nGeneratorInterface {
 
   generateImports() {
     const imports = {
-      FormattedMessage: this.formattedMessageImportNeeded,
       withTranslation: this.hocImportNeeded,
-      useIntl: this.useIntlImportNeeded,
+      useTranslation: this.hookImportNeeded,
     };
     const importsString = Object.entries(imports)
       .filter(([key, value]) => value)
