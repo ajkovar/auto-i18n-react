@@ -6,50 +6,40 @@ export default class FormatJsGenerator implements I18nGeneratorInterface {
   formattedMessageImportNeeded: boolean;
   hocInjectionNeeded: boolean;
   useIntlImportNeeded: boolean;
-  injectIntlImportNeeded: boolean;
+  hocImportNeeded: boolean;
 
   constructor() {
     this.formattedMessageImportNeeded = false;
     this.hocInjectionNeeded = false;
     this.useIntlImportNeeded = false;
-    this.injectIntlImportNeeded = false;
+    this.hocImportNeeded = false;
   }
 
   generateElementForJSXText(path: NodePath<t.JSXText>) {
     this.formattedMessageImportNeeded = !path.scope.hasBinding(
       'FormattedMessage'
     );
-    return t.jsxElement(
-      t.jsxOpeningElement(
-        t.jsxIdentifier('FormattedMessage'),
-        [
-          t.jsxAttribute(
-            t.jsxIdentifier('defaultMessage'),
-            // TODO fix this so double quotes will be allowed
-            t.stringLiteral(path.node.value.trim().split('"').join(''))
-          ),
-        ],
-        true
-      ),
-      null,
-      []
+    return t.jsxExpressionContainer(
+      t.callExpression(t.identifier('t'), [
+        t.stringLiteral(path.node.value.trim().split('"').join('')),
+      ])
     );
   }
 
   addVariableToScopeIfNeeded(
-    path: NodePath<t.Node>,
+    path: NodePath<t.StringLiteral>,
     reactContext: NodePath<t.Node>,
     parentClass: NodePath<t.ClassDeclaration> | null
   ) {
-    if (!path.scope.hasBinding('intl') && path.node.type == "StringLiteral") {
+    if (!path.scope.hasBinding('t')) {
       const init = parentClass
         ? t.memberExpression(
             t.memberExpression(t.thisExpression(), t.identifier('props')),
-            t.identifier('intl')
+            t.identifier('t')
           )
-        : t.callExpression(t.identifier('useIntl'), []);
+        : t.callExpression(t.identifier('useTranslation'), []);
       if (!parentClass) {
-        this.useIntlImportNeeded = !path.scope.hasBinding('useIntl');
+        this.useIntlImportNeeded = !path.scope.hasBinding('useTranslation');
       } else {
         this.hocInjectionNeeded = true;
       }
@@ -61,7 +51,7 @@ export default class FormatJsGenerator implements I18nGeneratorInterface {
         reactContext.node.key.name === 'constructor'
       ) &&
         (<NodePath<t.Node>>reactContext?.get('body')).scope.push({
-          id: t.identifier('intl'),
+          id: t.identifier('t'),
           init,
         });
     }
@@ -69,18 +59,8 @@ export default class FormatJsGenerator implements I18nGeneratorInterface {
 
   generateElementForStringLiteral(path: NodePath<t.StringLiteral>) {
     const { value } = path.node;
-    const args = [
-      t.objectExpression([
-        t.objectProperty(
-          t.identifier('defaultMessage'),
-          t.stringLiteral(value)
-        ),
-      ]),
-    ];
-    const intlCallExpression = t.callExpression(
-      t.memberExpression(t.identifier('intl'), t.identifier('formatMessage')),
-      args
-    );
+    const args = [t.stringLiteral(value)];
+    const intlCallExpression = t.callExpression(t.identifier('t'), args);
 
     const classMethod = path.findParent((parent) =>
       parent.isClassMethod()
@@ -97,11 +77,8 @@ export default class FormatJsGenerator implements I18nGeneratorInterface {
       isInsideConstructor
       ? t.callExpression(
           t.memberExpression(
-            t.memberExpression(
-              t.memberExpression(t.thisExpression(), t.identifier('props')),
-              t.identifier('intl')
-            ),
-            t.identifier('formatMessage')
+            t.memberExpression(t.thisExpression(), t.identifier('props')),
+            t.identifier('t')
           ),
           args
         )
@@ -115,8 +92,9 @@ export default class FormatJsGenerator implements I18nGeneratorInterface {
     const alreadyWrappedWithHoc = !!path.findParent(
       (parent) =>
         parent.isCallExpression() &&
-        parent.node.callee.type === 'Identifier' &&
-        parent.node.callee.name === 'injectIntl'
+        parent.node.callee.type == 'CallExpression' &&
+        parent.node.callee.callee.type === 'Identifier' &&
+        parent.node.callee.callee.name === 'withTranslation'
     );
     const className = parentClass.node.id.name;
     if (
@@ -124,9 +102,12 @@ export default class FormatJsGenerator implements I18nGeneratorInterface {
       !alreadyWrappedWithHoc &&
       this.hocInjectionNeeded
     ) {
-      this.injectIntlImportNeeded = !path.scope.hasBinding('injectIntl');
+      this.hocImportNeeded = !path.scope.hasBinding('withTranslation');
       path.replaceWith(
-        t.callExpression(t.identifier('injectIntl'), [t.identifier(className)])
+        t.callExpression(
+          t.callExpression(t.identifier('withTranslation'), []),
+          [t.identifier(className)]
+        )
       );
       path.skip();
     }
@@ -135,7 +116,7 @@ export default class FormatJsGenerator implements I18nGeneratorInterface {
   generateImports() {
     const imports = {
       FormattedMessage: this.formattedMessageImportNeeded,
-      injectIntl: this.injectIntlImportNeeded,
+      withTranslation: this.hocImportNeeded,
       useIntl: this.useIntlImportNeeded,
     };
     const importsString = Object.entries(imports)
@@ -144,7 +125,7 @@ export default class FormatJsGenerator implements I18nGeneratorInterface {
       .join(', ');
     return importsString.length === 0
       ? ''
-      : `import {${importsString}} from 'react-intl';`;
+      : `import {${importsString}} from 'react-i18next';`;
   }
 
   replacePropTypes(path: NodePath<t.Identifier>) {
@@ -152,12 +133,15 @@ export default class FormatJsGenerator implements I18nGeneratorInterface {
       const assignmentPath = path.findParent((path) =>
         path.isAssignmentExpression()
       );
-      const firstProp = (assignmentPath?.get('right') as NodePath<
+      const propsObject = assignmentPath?.get('right') as NodePath<
         t.ObjectExpression
-      >).get('properties.0') as NodePath<t.ObjectProperty>;
+      >;
+      const firstProp = propsObject.get('properties.0') as NodePath<
+        t.ObjectProperty
+      >;
       firstProp.insertBefore(
         t.objectProperty(
-          t.identifier('intl'),
+          t.identifier('t'),
           t.memberExpression(t.identifier('PropTypes'), t.identifier('object'))
         )
       );

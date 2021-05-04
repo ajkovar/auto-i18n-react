@@ -1,5 +1,6 @@
 import convertFile from '../app/convertFile';
 import fs from 'fs';
+import I18NextGenerator from '../app/generators/I18NextGenerator';
 
 test('consecutive text nodes', () => {
   const input = fs.readFileSync(
@@ -40,7 +41,7 @@ test('forbidden text', () => {
   expect(output).toBe(expectedOutput);
 });
 
-test('prop types', () => {
+test('formatjs prop types', () => {
   const input = fs.readFileSync(
     `${__dirname}/samples/propTypes.js`,
     'utf8'
@@ -50,5 +51,18 @@ test('prop types', () => {
     'utf8'
   );
   const [output] = convertFile(input);
+  expect(output).toBe(expectedOutput);
+});
+
+test('i18next prop types', () => {
+  const input = fs.readFileSync(
+    `${__dirname}/samples/propTypes.js`,
+    'utf8'
+  );
+  const expectedOutput = fs.readFileSync(
+    `${__dirname}/samples/propTypes.i18next.output.js`,
+    'utf8'
+  );
+  const [output] = convertFile(input, new I18NextGenerator());
   expect(output).toBe(expectedOutput);
 });

@@ -24,9 +24,15 @@ export default function (
     path.replaceWith(replacement);
     modifications++;
   };
+  const getReactContext = (path: NodePath<t.Node>) =>
+    parentClass
+      ? path.findParent((parent) => parent.isClassMethod())
+      : findTopLevelReactFn(<NodePath<t.Node>>path);
   traverse(ast, {
     JSXText: function (path) {
-      if (isTranslatablePattern(path.node.value.trim(), true)) {
+      const reactContext = getReactContext(path);
+      if (reactContext && isTranslatablePattern(path.node.value.trim(), true)) {
+        generator.addVariableToScopeIfNeeded(path, reactContext, parentClass);
         replacePath(path, generator.generateElementForJSXText(path));
         path.skip();
       }
@@ -45,9 +51,7 @@ export default function (
       }
     },
     StringLiteral: function (path) {
-      const reactContext = parentClass
-        ? path.findParent((parent) => parent.isClassMethod())
-        : findTopLevelReactFn(<NodePath<t.Node>>path);
+      const reactContext = getReactContext(path);
       const { value } = path.node;
       if (
         !isForbiddenPath(path) &&
@@ -84,12 +88,8 @@ export default function (
     },
   });
 
-  const importsString = generator.generateImports();
-
   const code =
-    (importsString.length === 0
-      ? ''
-      : `import {${importsString}} from 'react-intl';`) +
+    generator.generateImports() +
     generate(ast, {
       jsescOption: {
         minimal: true,
